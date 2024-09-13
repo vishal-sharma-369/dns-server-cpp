@@ -4,6 +4,23 @@
 #include <netinet/in.h>
 #include <unistd.h>
 
+#include "dns/dns_message.hpp"
+
+std::string write_message()
+{
+    DNS_Message msg;
+    msg.ID = 1234;
+    msg.FLAGS = (1 << 15);
+    msg.QDCOUNT = 0;
+    msg.ANCOUNT = 0;
+    msg.NSCOUNT = 0;
+    msg.ARCOUNT = 0;
+
+    msg.to_network_order();
+    std::string header = std::to_string(msg.ID) + std::to_string(msg.FLAGS) +  std::to_string(msg.QDCOUNT) + std::to_string(msg.ANCOUNT) + std::to_string(msg.NSCOUNT) + std::to_string(msg.ARCOUNT);
+    return header;
+}
+
 int main() {
     // Flush after every std::cout / std::cerr
     std::cout << std::unitbuf;
@@ -42,24 +59,26 @@ int main() {
    socklen_t clientAddrLen = sizeof(clientAddress);
 
    while (true) {
-       // Receive data
-       std::cout<<"UDP Server Listening on Port: 2053"<<std::endl;
-       bytesRead = recvfrom(udpSocket, buffer, sizeof(buffer), 0, reinterpret_cast<struct sockaddr*>(&clientAddress), &clientAddrLen);
-       if (bytesRead == -1) {
-           perror("Error receiving data");
-           break;
-       }
+        // Receive data
+        std::cout<<"UDP Server Listening on Port: 2053"<<std::endl;
+        bytesRead = recvfrom(udpSocket, buffer, sizeof(buffer), 0, reinterpret_cast<struct sockaddr*>(&clientAddress), &clientAddrLen);
+        if (bytesRead == -1) {
+            perror("Error receiving data");
+            break;
+        }
 
-       buffer[bytesRead] = '\0';
-       std::cout << "Received " << bytesRead << " bytes: " << buffer << std::endl;
+        buffer[bytesRead] = '\0';
+        std::cout << "Received " << bytesRead << " bytes: " << buffer << std::endl;
 
-       // Create an empty response
-       char response[1] = { '\0' };
+        // Create an empty response
+        //    char response[1] = { '\0' };
+        std::string response = write_message();
 
-       // Send response
-       if (sendto(udpSocket, response, sizeof(response), 0, reinterpret_cast<struct sockaddr*>(&clientAddress), sizeof(clientAddress)) == -1) {
-           perror("Failed to send response");
-       }
+        std::cout<< response << std::endl;
+        // Send response
+        if (sendto(udpSocket, response.c_str(), sizeof(response), 0, reinterpret_cast<struct sockaddr*>(&clientAddress), sizeof(clientAddress)) == -1) {
+            perror("Failed to send response");
+        }
    }
 
    close(udpSocket);
