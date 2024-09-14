@@ -24,7 +24,7 @@ public:
 
 
     //  DNS Answer Parser Methods
-    void parse_dns_answer_section(std::uint8_t response_msg[], ssize_t bytes_received);
+    void parse_dns_answer_section(std::uint8_t response_msg[], ssize_t bytes_received, std::uint8_t answerSectionStartIndex, std::uint16_t name_length);
 };
 
 #endif

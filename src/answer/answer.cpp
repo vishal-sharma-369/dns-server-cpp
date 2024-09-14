@@ -71,7 +71,18 @@ void DNS_Answer::write_dns_answer_section_to_byte_buffer(std::uint8_t responseBu
 
 
 //  DNS Answer Parser Methods
-void DNS_Answer::parse_dns_answer_section(std::uint8_t response_msg[], ssize_t bytes_received)
+void DNS_Answer::parse_dns_answer_section(std::uint8_t response_msg[], ssize_t bytes_received, std::uint8_t answerSectionStartIndex, std::uint16_t name_length)
 {
+    this->NAME.resize(name_length);
+    std::copy(response_msg + answerSectionStartIndex, response_msg + answerSectionStartIndex + name_length, this->NAME.begin());
+    // The extra 10 size is used for adding the TYPE, CLASS, TTL, and RDLENGTH fields of answer section
+    std::uint16_t answerSectionStartIndexAfterNAME = answerSectionStartIndex + this->NAME.size();
 
+    this->TYPE = std::uint16_t(response_msg[answerSectionStartIndexAfterNAME]) | std::uint16_t(response_msg[answerSectionStartIndexAfterNAME + 1]) << 8;
+    this->CLASS = std::uint16_t(response_msg[answerSectionStartIndexAfterNAME + 2]) | std::uint16_t(response_msg[answerSectionStartIndexAfterNAME + 3]) << 8;
+    this->TTL = std::uint32_t(response_msg[answerSectionStartIndexAfterNAME + 4]) | std::uint32_t(response_msg[answerSectionStartIndexAfterNAME + 5]) << 8 | std::uint32_t(response_msg[answerSectionStartIndexAfterNAME + 6]) << 16 | std::uint32_t(response_msg[answerSectionStartIndexAfterNAME + 7]) << 24;
+    this->RDLENGTH = std::uint16_t(response_msg[answerSectionStartIndexAfterNAME + 8]) | std::uint16_t(response_msg[answerSectionStartIndexAfterNAME + 9]) << 8;
+    this->RDATA.resize(4);
+    std::copy(response_msg + answerSectionStartIndexAfterNAME + 10, response_msg + answerSectionStartIndexAfterNAME + 10 + 4, this->RDATA.begin());
+    this->from_network_order();
 }

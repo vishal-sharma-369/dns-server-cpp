@@ -21,7 +21,7 @@ class DNS_Question
 
 
     //  DNS Question Parser Methods
-    void parse_dns_question_section(std::uint8_t response_msg[], ssize_t bytes_received);
+    void parse_dns_question_section(std::uint8_t response_msg[], ssize_t bytes_received, std::uint8_t questionSectionStartIndex, std::uint16_t qname_length);
 };
 
 #endif

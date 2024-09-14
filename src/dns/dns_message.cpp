@@ -57,10 +57,30 @@ void DNS_Message::write_dns_message_to_byte_buffer(std::uint8_t responseBuffer[]
 -----------------------------------------------------------------------------------
 */
 
+/*
+* This function computes the length of the QNAME field of question section
+* This function computes the length of the NAME field of answer section
+*/
+
+std::uint16_t compute_name_length(std::uint8_t response_msg[], ssize_t bytes_received, std::uint8_t start_index)
+{
+    std::uint16_t length = 1;
+    std::uint16_t domain_name_length = response_msg[start_index];
+    while(domain_name_length)
+    {
+        length += domain_name_length + 1;
+        start_index = start_index + domain_name_length + 1;
+        domain_name_length = response_msg[start_index];
+    }
+    return length;
+}
+
 void DNS_Message::parse_dns_message(std::uint8_t response_msg[], ssize_t bytes_received)
 {
+    // Parse dns header
     this->header.parse_dns_header(response_msg, bytes_received);
 
+    std::cout<<"Displaying Header Details Received: "<<std::endl;
     std::cout<<"ID: "<< this->header.ID <<std::endl;
     std::cout<<"FLAGS: "<< this->header.FLAGS <<std::endl;
     std::cout<<"QDCOUNT: "<< this->header.QDCOUNT <<std::endl;
@@ -68,39 +88,62 @@ void DNS_Message::parse_dns_message(std::uint8_t response_msg[], ssize_t bytes_r
     std::cout<<"NSCOUNT: "<< this->header.NSCOUNT <<std::endl;
     std::cout<<"ARCOUNT: "<< this->header.ARCOUNT <<std::endl;
 
-/*
-    // Copying the response question section to the response buffer
-    std::uint8_t questionSectionStartIndex = sizeof(response.header);
-    std::copy(response.question.QNAME.begin(), response.question.QNAME.end(), responseBuffer + questionSectionStartIndex);
-    // The extra 4 size is used for adding the TYPE and CLASS fields of question section(as they are of 2 bytes and character is of 1 byte each, so we need a total of 4 to create response)
-    responseBuffer[questionSectionStartIndex + response.question.QNAME.size()] = 0;
-    responseBuffer[questionSectionStartIndex + response.question.QNAME.size() + 1] = 1;
-    responseBuffer[questionSectionStartIndex + response.question.QNAME.size() + 2] = 0;
-    responseBuffer[questionSectionStartIndex + response.question.QNAME.size() + 3] = 1;
+    // Parse dns question section
+    std::uint8_t questionSectionStartIndex = sizeof(this->header);
+    std::uint16_t qname_length = compute_name_length(response_msg, bytes_received, questionSectionStartIndex);
+    this->question.parse_dns_question_section(response_msg, bytes_received, questionSectionStartIndex, qname_length);
 
-    // Copying the response answer section to the response buffer
-    std::uint16_t answerSectionStartIndex = sizeof(response.header) + response.question.QNAME.size() +  4;
-    std::copy(response.answer.NAME.begin(), response.answer.NAME.end(), responseBuffer + answerSectionStartIndex);
-    // The extra 10 size is used for adding the TYPE, CLASS, TTL, and RDLENGTH fields of answer section
-    responseBuffer[answerSectionStartIndex + response.answer.NAME.size()] = 0;
-    responseBuffer[answerSectionStartIndex + response.answer.NAME.size() + 1] = 1;
-    responseBuffer[answerSectionStartIndex + response.answer.NAME.size() + 2] = 0;
-    responseBuffer[answerSectionStartIndex + response.answer.NAME.size() + 3] = 1;
-    responseBuffer[answerSectionStartIndex + response.answer.NAME.size() + 4] = 0;
-    responseBuffer[answerSectionStartIndex + response.answer.NAME.size() + 5] = 0;
-    responseBuffer[answerSectionStartIndex + response.answer.NAME.size() + 6] = 0;
-    responseBuffer[answerSectionStartIndex + response.answer.NAME.size() + 7] = 60;
-    responseBuffer[answerSectionStartIndex + response.answer.NAME.size() + 8] = 0;
-    responseBuffer[answerSectionStartIndex + response.answer.NAME.size() + 9] = 4;
-    std::copy(response.answer.RDATA.begin(), response.answer.RDATA.end(), responseBuffer + answerSectionStartIndex + response.answer.NAME.size() + 10);
-    std::cout<<"Created the header, question, and answer section response"<<std::endl;
+    std::cout<<"\n\nDisplaying Question Section Details Received: "<<std::endl;
+    std::cout<<"QNAME: ";
+    for(std::uint8_t b : this->question.QNAME)
+    {
+        if(b >= 97 && b <= 122)
+        {
+            std::cout<<b<<" ";
+        }
+        else std::cout<<unsigned(b)<<" ";
+    }
+    std::cout<<std::endl;
+    std::cout<<"TYPE: "<< this->question.TYPE <<std::endl;
+    std::cout<<"CLASS: "<< this->question.CLASS <<std::endl;
 
-    std::cout<<"Buffer size: "<<sizeof(responseBuffer)<<std::endl;
-    std::cout<<"Header size: "<<sizeof(response.header)<<std::endl;
-    std::cout<<"Question QNAME size: "<<response.question.QNAME.size()<<std::endl;
-    std::cout<<"Question Section size: "<<response.question.QNAME.size() + 4<<std::endl;
-    std::cout<<"Answer NAME size: "<<response.answer.NAME.size() << std::endl;
-    std::cout<<"Answer RDATA size: "<<response.answer.RDATA.size() << std::endl;
-    std::cout<<"Answer Section size: "<<response.answer.NAME.size() + 10 + response.answer.RDATA.size() << std::endl;
-*/
+    // Parse dns answer section
+    std::uint16_t answerSectionStartIndex = sizeof(this->header) + this->question.QNAME.size() +  4;
+    std::uint16_t name_length = compute_name_length(response_msg, bytes_received, answerSectionStartIndex);
+    this->answer.parse_dns_answer_section(response_msg, bytes_received, answerSectionStartIndex, name_length);
+
+    std::cout<<"\n\nDisplaying Answer Section Details Received: "<<std::endl;
+    std::cout<<"NAME: ";
+    for(std::uint8_t b : this->answer.NAME)
+    {
+        if(b >= 97 && b <= 122)
+        {
+            std::cout<<b<<" ";
+        }
+        else std::cout<<unsigned(b)<<" ";
+    }
+    std::cout<<std::endl;
+    std::cout<<"TYPE: "<< this->answer.TYPE <<std::endl;
+    std::cout<<"CLASS: "<< this->answer.CLASS <<std::endl;
+    std::cout<<"TTL: "<< unsigned(this->answer.TTL) <<std::endl;
+    std::cout<<"RDLENGTH: "<< this->answer.RDLENGTH <<std::endl;
+    std::cout<<"RDATA: ";
+    for(std::uint8_t b : this->answer.RDATA)
+    {
+        if(b >= 97 && b <= 122)
+        {
+            std::cout<<b<<" ";
+        }
+        else std::cout<<unsigned(b)<<" ";
+    }
+    std::cout << std::endl;
+
+    std::cout<<"\n\nDisplaying overall DNS message/response details: "<<std::endl;
+    std::cout<<"Buffer size: "<<bytes_received<<std::endl;
+    std::cout<<"Header size: "<<sizeof(this->header)<<std::endl;
+    std::cout<<"Question QNAME size: "<<this->question.QNAME.size()<<std::endl;
+    std::cout<<"Question Section size: "<<this->question.QNAME.size() + 4<<std::endl;
+    std::cout<<"Answer NAME size: "<<this->answer.NAME.size() << std::endl;
+    std::cout<<"Answer RDATA size: "<<this->answer.RDATA.size() << std::endl;
+    std::cout<<"Answer Section size: "<<this->answer.NAME.size() + 10 + this->answer.RDATA.size() << std::endl;
 }
