@@ -40,12 +40,16 @@ int setup_socket_client(int &sockfd, struct sockaddr_in &server_addr)
     }
 
     std::cout << "Message sent to server: " << message << std::endl;
+    return 0;    // Indicates successfull socket binding
 }
 
 int main() {
     int sockfd;
     struct sockaddr_in server_addr;
-    setup_socket_client(sockfd, server_addr);
+    if(setup_socket_client(sockfd, server_addr) == -1)
+    {
+        return 1;   // Exit code due to some error while sending packets to server
+    }
 
     // Receive response from the server
     std::uint8_t buffer[BUFFER_SIZE];

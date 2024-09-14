@@ -15,6 +15,14 @@ public:
     DNS_Header();
     void to_network_order();
     void from_network_order();
+
+    //  DNS Header Writer Methods
+    void write_dns_header();
+    void write_dns_header_to_byte_buffer(std::uint8_t responseBuffer[], std::uint16_t bytesToSend);
+
+
+    //  DNS Header Parser Methods
+    void parse_dns_header(std::uint8_t response_msg[], ssize_t bytes_received);
 };
 
 #endif
