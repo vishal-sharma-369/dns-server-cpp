@@ -13,5 +13,12 @@ list(REMOVE_ITEM ALL_SOURCE_FILES ${CMAKE_SOURCE_DIR}/src/client.cpp)
 # Create an executable for the server
 add_executable(my_dns_server ${ALL_SOURCE_FILES})
 
+# Again append the src/client.cpp file to ALL_SOURCE_FILES
+list(APPEND ALL_SOURCE_FILES ${CMAKE_SOURCE_DIR}/src/client.cpp)
+
+# Collect all files except server.cpp for the client
+list(REMOVE_ITEM ALL_SOURCE_FILES ${CMAKE_SOURCE_DIR}/src/server.cpp)
+
 # Create an executable for the client
-add_executable(my_dns_client src/client.cpp)
+# add_executable(my_dns_client src/client.cpp)
+add_executable(my_dns_client ${ALL_SOURCE_FILES})

@@ -3,14 +3,17 @@
 
 #include "../header/header.hpp"
 #include "../question/question.hpp"
+#include "../answer/answer.hpp"
 
 class DNS_Message
 {
     public:
         DNS_Header header;
         DNS_Question question;
+        DNS_Answer answer;
     DNS_Message();
     void to_network_order();
+    void from_network_order();
 };
 
 #endif

@@ -2,7 +2,7 @@
 #define HEADER_H
 #include <cstdint>
 
-class DNS_Header 
+class __attribute__((packed)) DNS_Header 
 {
 public:
     std::uint16_t ID;
@@ -14,6 +14,7 @@ public:
 
     DNS_Header();
     void to_network_order();
+    void from_network_order();
 };
 
 #endif

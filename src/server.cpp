@@ -6,53 +6,65 @@
 
 #include "dns/dns_message.hpp"
 
-void write_message(DNS_Message& response)
+void write_message(DNS_Message& response_msg)
 {
-    // std::string header = std::to_string(msg.ID) + std::to_string(msg.FLAGS) +  std::to_string(msg.QDCOUNT) + std::to_string(msg.ANCOUNT) + std::to_string(msg.NSCOUNT) + std::to_string(msg.ARCOUNT);
-    // return header;
-
-    DNS_Message msg;
-
     // Step1: Create the DNS_Header Section
-    msg.header.ID = 1234;
-    msg.header.FLAGS = (1 << 15);
-    msg.header.QDCOUNT = 0;
-    msg.header.ANCOUNT = 0;
-    msg.header.NSCOUNT = 0;
-    msg.header.ARCOUNT = 0;
-    // msg.header.to_network_order();
+    response_msg.header.ID = 1234;
+    response_msg.header.FLAGS = 0;
+    response_msg.header.FLAGS = (1 << 15);
+    response_msg.header.QDCOUNT = 0;
+    response_msg.header.ANCOUNT = 1;
+    response_msg.header.NSCOUNT = 0;
+    response_msg.header.ARCOUNT = 0;
 
     // Step2: Create the DNS_Question Section
-    // msg.question.QNAME = "\\x0ccodecrafters\\x02io";
-    // msg.question.TYPE = 1;
-    // msg.question.CLASS = 1;
-    // msg.question.to_network_order();
-
-    // std::string header_section = std::to_string(msg.header.ID) + std::to_string(msg.header.FLAGS) +  std::to_string(msg.header.QDCOUNT) + std::to_string(msg.header.ANCOUNT) + std::to_string(msg.header.NSCOUNT) + std::to_string(msg.header.ARCOUNT);
-    // std::string question_section = msg.question.QNAME + std::to_string(msg.question.TYPE) + std::to_string(msg.question.CLASS);
-
-    // std::string response = header_section + question_section;
-    // return response;
-
-
-    // Step2: Create the DNS_Question Section
-    std::string first_domain = "codecrafters";
-    msg.question.QNAME.push_back((uint8_t)first_domain.size());
-    for(char c : first_domain) {
-        msg.question.QNAME.push_back(c);
+    std::string first_question_domain = "codecrafters";
+    response_msg.question.QNAME.push_back((uint8_t)first_question_domain.size());
+    for(char c : first_question_domain) {
+        response_msg.question.QNAME.push_back(c);
     }
 
-    std::string second_domain = "io";
-    msg.question.QNAME.push_back((uint8_t)second_domain.size());
-    for(char c : second_domain) {
-        msg.question.QNAME.push_back(c);
+    std::string second_question_domain = "io";
+    response_msg.question.QNAME.push_back((uint8_t)second_question_domain.size());
+    for(char c : second_question_domain) {
+        response_msg.question.QNAME.push_back(c);
     }
-    msg.question.QNAME.push_back(0);
+    response_msg.question.QNAME.push_back(0);
 
-    msg.question.CLASS = 1;
-    msg.question.TYPE = 1;
+    response_msg.question.CLASS = 1;
+    response_msg.question.TYPE = 1;
 
-    msg.to_network_order();
+    // Step3: Create the DNS_Answer Section
+    std::string first_answer_domain = "codecrafters";
+    response_msg.answer.NAME.push_back((uint8_t) first_answer_domain.size());
+    for(char c: first_answer_domain)
+    {
+        response_msg.answer.NAME.push_back(c);
+    }
+
+    std::string second_answer_domain = "io";
+    response_msg.answer.NAME.push_back((uint8_t)second_answer_domain.size());
+    for(char c : second_answer_domain)
+    {
+        response_msg.answer.NAME.push_back(c);
+    }
+    response_msg.answer.NAME.push_back(0);
+    response_msg.answer.TYPE = 1;
+    response_msg.answer.CLASS = 1;
+    response_msg.answer.TTL = 60;
+    response_msg.answer.RDLENGTH = 4;
+
+    std::uint8_t first_ip_segment = 8;
+    std::uint8_t second_ip_segment = 8;
+    std::uint8_t third_ip_segment = 8;
+    std::uint8_t fourth_ip_segment = 8;
+
+    response_msg.answer.RDATA.push_back(first_ip_segment);
+    response_msg.answer.RDATA.push_back(second_ip_segment);
+    response_msg.answer.RDATA.push_back(third_ip_segment);
+    response_msg.answer.RDATA.push_back(fourth_ip_segment);
+
+    response_msg.to_network_order();
 }
 
 int main() {
@@ -104,21 +116,49 @@ int main() {
         buffer[bytesRead] = '\0';
         std::cout << "Received " << bytesRead << " bytes: " << buffer << std::endl;
 
-        // Create an empty response
-        //    char response[1] = { '\0' };
         DNS_Message response;
         write_message(response);
 
-        char responseBuffer[sizeof(response.header) + response.question.QNAME.size()  + 4];
+        char responseBuffer[sizeof(response.header) + (response.question.QNAME.size()  + 4) + (response.answer.NAME.size() + 10 + response.answer.RDATA.size())];
+
+        // Copying the response header to the response buffer
         std::copy((const char*) &response.header, (const char*) &response.header + sizeof(response.header), responseBuffer);
-        std::copy(response.question.QNAME.begin(), response.question.QNAME.end(), responseBuffer + sizeof(response.header));
-        // The extra 4 size is used for adding the TYPE and CLASS fields of header section(as they are of 2 bytes and character is of 1 byte each, so we need a total of 4 to create response)
-        responseBuffer[sizeof(response.header) + response.question.QNAME.size()] = 0;
-        responseBuffer[sizeof(response.header) + response.question.QNAME.size() + 1] = 1;
-        responseBuffer[sizeof(response.header) + response.question.QNAME.size() + 2] = 0;
-        responseBuffer[sizeof(response.header) + response.question.QNAME.size() + 3] = 1;
 
+        // Copying the response question section to the response buffer
+        std::uint8_t questionSectionStartIndex = sizeof(response.header);
+        std::copy(response.question.QNAME.begin(), response.question.QNAME.end(), responseBuffer + questionSectionStartIndex);
+        // The extra 4 size is used for adding the TYPE and CLASS fields of question section(as they are of 2 bytes and character is of 1 byte each, so we need a total of 4 to create response)
+        responseBuffer[questionSectionStartIndex + response.question.QNAME.size()] = 0;
+        responseBuffer[questionSectionStartIndex + response.question.QNAME.size() + 1] = 1;
+        responseBuffer[questionSectionStartIndex + response.question.QNAME.size() + 2] = 0;
+        responseBuffer[questionSectionStartIndex + response.question.QNAME.size() + 3] = 1;
 
+        // Copying the response answer section to the response buffer
+        std::uint16_t answerSectionStartIndex = sizeof(response.header) + response.question.QNAME.size() +  4;
+        std::copy(response.answer.NAME.begin(), response.answer.NAME.end(), responseBuffer + answerSectionStartIndex);
+        // The extra 10 size is used for adding the TYPE, CLASS, TTL, and RDLENGTH fields of answer section
+        responseBuffer[answerSectionStartIndex + response.answer.NAME.size()] = 0;
+        responseBuffer[answerSectionStartIndex + response.answer.NAME.size() + 1] = 1;
+        responseBuffer[answerSectionStartIndex + response.answer.NAME.size() + 2] = 0;
+        responseBuffer[answerSectionStartIndex + response.answer.NAME.size() + 3] = 1;
+        responseBuffer[answerSectionStartIndex + response.answer.NAME.size() + 4] = 0;
+        responseBuffer[answerSectionStartIndex + response.answer.NAME.size() + 5] = 0;
+        responseBuffer[answerSectionStartIndex + response.answer.NAME.size() + 6] = 0;
+        responseBuffer[answerSectionStartIndex + response.answer.NAME.size() + 7] = 60;
+        responseBuffer[answerSectionStartIndex + response.answer.NAME.size() + 8] = 0;
+        responseBuffer[answerSectionStartIndex + response.answer.NAME.size() + 9] = 4;
+        std::copy(response.answer.RDATA.begin(), response.answer.RDATA.end(), responseBuffer + answerSectionStartIndex + response.answer.NAME.size() + 10);
+        std::cout<<"Created the header, question, and answer section response"<<std::endl;
+
+        std::cout<<"Buffer size: "<<sizeof(responseBuffer)<<std::endl;
+        std::cout<<"Header size: "<<sizeof(response.header)<<std::endl;
+        std::cout<<"Question QNAME size: "<<response.question.QNAME.size()<<std::endl;
+        std::cout<<"Question Section size: "<<response.question.QNAME.size() + 4<<std::endl;
+        std::cout<<"Answer NAME size: "<<response.answer.NAME.size() << std::endl;
+        std::cout<<"Answer RDATA size: "<<response.answer.RDATA.size() << std::endl;
+        std::cout<<"Answer Section size: "<<response.answer.NAME.size() + 10 + response.answer.RDATA.size() << std::endl;
+        
+        std::cout<<std::string(responseBuffer, responseBuffer + sizeof(responseBuffer))<<std::endl;
         // Send response
         if (sendto(udpSocket, responseBuffer, sizeof(responseBuffer), 0, reinterpret_cast<struct sockaddr*>(&clientAddress), sizeof(clientAddress)) == -1) {
             perror("Failed to send response");
