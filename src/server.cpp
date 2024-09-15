@@ -66,7 +66,15 @@ int main() {
         DNS_Message response;
         response.write_dns_message();
 
-        std::uint16_t bytesToSend = sizeof(response.header) + (response.question.QNAME.size()  + 4) + (response.answer.NAME.size() + 10 + response.answer.RDATA.size());
+        std::uint16_t bytesToSend = sizeof(response.header);
+        for(DNS_Question question : response.questions)
+        {
+            bytesToSend += question.QNAME.size() + 4;
+        }
+        for(DNS_Answer answer : response.answers)
+        {
+            bytesToSend += answer.NAME.size() + 10 + answer.RDATA.size();
+        }
         std::uint8_t responseBuffer[bytesToSend];
         response.write_dns_message_to_byte_buffer(responseBuffer, bytesToSend);
 

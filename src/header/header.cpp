@@ -29,7 +29,7 @@ void DNS_Header::write_dns_header()
     this->ID = 1;
     this->FLAGS = 0;
     this->FLAGS = (1 << 15);
-    this->QDCOUNT = 0;
+    this->QDCOUNT = 1;
     this->ANCOUNT = 1;
     this->NSCOUNT = 0;
     this->ARCOUNT = 0;

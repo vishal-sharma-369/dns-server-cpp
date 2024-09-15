@@ -9,8 +9,8 @@ class DNS_Message
 {
     public:
         DNS_Header header;
-        DNS_Question question;
-        DNS_Answer answer;
+        std::vector<DNS_Question> questions;
+        std::vector<DNS_Answer> answers;
     DNS_Message();
     void to_network_order();
     void from_network_order();
