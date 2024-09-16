@@ -20,36 +20,30 @@ void DNS_Answer::from_network_order()
 }
 
 //  DNS Answer Writer Methods
-void DNS_Answer::write_dns_answer_section()
+void DNS_Answer::write_dns_answer_section(std::vector<std::string> nameDomains, std::vector<std::string> rDataDomains, std::vector<std::string> answerRR)
 {
-    std::string first_answer_domain = "codecrafters";
-    this->NAME.push_back((uint8_t) first_answer_domain.size());
-    for(char c: first_answer_domain)
+    for(int i = 0; i < nameDomains.size(); i++)
     {
-        this->NAME.push_back(c);
+        std::string domain = nameDomains[i];
+        this->NAME.push_back((uint8_t) domain.size());
+        for(char c: domain)
+        {
+            this->NAME.push_back(c);
+        }
     }
 
-    std::string second_answer_domain = "io";
-    this->NAME.push_back((uint8_t)second_answer_domain.size());
-    for(char c : second_answer_domain)
-    {
-        this->NAME.push_back(c);
-    }
     this->NAME.push_back(0);
-    this->TYPE = 1;
-    this->CLASS = 1;
-    this->TTL = 60;
-    this->RDLENGTH = 4;
 
-    std::uint8_t first_ip_segment = 8;
-    std::uint8_t second_ip_segment = 8;
-    std::uint8_t third_ip_segment = 8;
-    std::uint8_t fourth_ip_segment = 8;
+    this->TYPE = static_cast<std::uint16_t>(std::stoi(answerRR[1]));
+    this->CLASS = static_cast<std::uint16_t>(std::stoi(answerRR[2]));
+    this->TTL = static_cast<std::uint32_t>(std::stoul(answerRR[3]));
+    this->RDLENGTH = static_cast<std::uint16_t>(std::stoi(answerRR[4]));
 
-    this->RDATA.push_back(first_ip_segment);
-    this->RDATA.push_back(second_ip_segment);
-    this->RDATA.push_back(third_ip_segment);
-    this->RDATA.push_back(fourth_ip_segment);
+    for(int i = 0; i < this->RDLENGTH; i++)
+    {
+        std::uint8_t ip_segment = static_cast<std::uint8_t>(std::stoi(rDataDomains[i]));
+        this->RDATA.push_back(ip_segment);
+    }
 }
 
 void DNS_Answer::write_dns_answer_section_to_byte_buffer(std::uint8_t responseBuffer[], std::uint16_t bytesToSend, std::uint8_t answerSectionStartIndex)

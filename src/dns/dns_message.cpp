@@ -28,7 +28,7 @@ void DNS_Message::from_network_order()
 -----------------------------------------------------------------------------------
 */
 
-std::vector<std::string> get_domains_from_qname(std::string qname)
+std::vector<std::string> get_domains_from_name(std::string qname)
 {
     std::vector<std::string> domains;
     std::stringstream ss(qname);
@@ -56,13 +56,23 @@ void DNS_Message::write_dns_message()
     this->questions.resize(questions.size());
     for(int i = 0; i < questions.size(); i++)
     {
-        std::vector<std::string> domains = get_domains_from_qname(questions[i].first);
+        std::vector<std::string> domains = get_domains_from_name(questions[i].first);
         this->questions[i].write_dns_question_section(domains, questions[i].second.first, questions[i].second.second);
     }
 
+    std::vector<std::vector<std::string>> answers = {
+        {"codecrafters.io", "1", "1", "60", "4", "81.8.8.8"},
+        {"google.com", "1", "1", "60", "4", "8.8.80.8"}
+    };
+
     // Step3: Create the DNS_Answer Section
-    this->answers.resize(1);
-    this->answers[0].write_dns_answer_section();
+    this->answers.resize(answers.size());
+    for(int i = 0; i < answers.size(); i++)
+    {
+        std::vector<std::string> nameDomains = get_domains_from_name(answers[i][0]);
+        std::vector<std::string> rDataDomains = get_domains_from_name(answers[i][5]);
+        this->answers[i].write_dns_answer_section(nameDomains, rDataDomains, answers[i]);
+    }
 
     this->to_network_order();
 }

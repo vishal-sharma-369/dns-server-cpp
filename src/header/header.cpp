@@ -30,7 +30,7 @@ void DNS_Header::write_dns_header()
     this->FLAGS = 0;
     this->FLAGS = (1 << 15);
     this->QDCOUNT = 3;
-    this->ANCOUNT = 1;
+    this->ANCOUNT = 2;
     this->NSCOUNT = 0;
     this->ARCOUNT = 0;
 }

@@ -19,7 +19,7 @@ public:
     void from_network_order();
 
     //  DNS Answer Writer Methods
-    void write_dns_answer_section();
+    void write_dns_answer_section(std::vector<std::string> nameDomains, std::vector<std::string> rDataDomains, std::vector<std::string> answerRR);
     void write_dns_answer_section_to_byte_buffer(std::uint8_t responseBuffer[], std::uint16_t bytesToSend, std::uint8_t answerSectionStartIndex);
 
 
