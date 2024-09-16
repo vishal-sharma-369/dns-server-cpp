@@ -1,4 +1,6 @@
 #include <unistd.h>
+#include <sstream>
+#include <unordered_map>
 #include "dns_message.hpp"
 
 DNS_Message::DNS_Message(){}
@@ -26,14 +28,37 @@ void DNS_Message::from_network_order()
 -----------------------------------------------------------------------------------
 */
 
+std::vector<std::string> get_domains_from_qname(std::string qname)
+{
+    std::vector<std::string> domains;
+    std::stringstream ss(qname);
+    std::string domain;
+    while(!ss.eof())
+    {
+        getline(ss, domain, '.');
+        domains.push_back(domain);
+    }
+    return domains;
+}
+
 void DNS_Message::write_dns_message()
 {
     // Step1: Create the DNS_Header Section
     this->header.write_dns_header();
 
+    std::vector<std::pair<std::string, std::pair<int,int>>> questions = {
+        {"www.upmc.fr", {1,1}},
+        {"www.upmc.fr", {5,1}},
+        {"web.upmc.fr", {5,1}}
+    };
+
     // Step2: Create the DNS_Question Section
-    this->questions.resize(1);
-    this->questions[0].write_dns_question_section();
+    this->questions.resize(questions.size());
+    for(int i = 0; i < questions.size(); i++)
+    {
+        std::vector<std::string> domains = get_domains_from_qname(questions[i].first);
+        this->questions[i].write_dns_question_section(domains, questions[i].second.first, questions[i].second.second);
+    }
 
     // Step3: Create the DNS_Answer Section
     this->answers.resize(1);
@@ -42,17 +67,18 @@ void DNS_Message::write_dns_message()
     this->to_network_order();
 }
 
-void DNS_Message::write_dns_message_to_byte_buffer(std::uint8_t responseBuffer[], std::uint16_t bytesToSend)
+std::pair<std::uint16_t, std::uint16_t> DNS_Message::write_dns_message_to_byte_buffer(std::uint8_t responseBuffer[], std::uint16_t bytesToSend)
 {
         // Copying the response header to the response buffer
         this->header.write_dns_header_to_byte_buffer(responseBuffer, bytesToSend);
 
         // Copying the response question section to the response buffer
+        std::unordered_map<std::string, std::uint16_t> domain_name_to_buffer_index_pointer;
         std::uint8_t questionSectionStartIndex = sizeof(this->header);
         for(DNS_Question question : this->questions)
         {
-            question.write_dns_question_section_to_byte_buffer(responseBuffer, bytesToSend, questionSectionStartIndex);
-            questionSectionStartIndex += question.QNAME.size() + 4;
+            std::uint16_t qname_size_in_response_Buffer =  question.write_dns_question_section_to_byte_buffer(responseBuffer, bytesToSend, questionSectionStartIndex, domain_name_to_buffer_index_pointer);
+            questionSectionStartIndex += qname_size_in_response_Buffer + 4;
         }
 
         // Copying the response answer section to the response buffer
@@ -70,6 +96,9 @@ void DNS_Message::write_dns_message_to_byte_buffer(std::uint8_t responseBuffer[]
 
         // We reverse fields from network order back to system order, so that the original values can be used by logger for writing logs
         this->from_network_order();
+
+        // This answerSectionStartIndex now contains the size of the dns_message in the responseBuffer
+        return {questionSectionStartIndex, answerSectionStartIndex};
 }
 
 
@@ -80,20 +109,40 @@ void DNS_Message::write_dns_message_to_byte_buffer(std::uint8_t responseBuffer[]
 */
 
 /*
+* This function tells whether the label in question QNAME or answer NAME is a pointer or not
+*/
+
+bool DNS_Message::isPointer(std::uint8_t x)
+{
+    return (x & (3 << 6)) == (3 << 6);
+}
+
+/*
 * This function computes the length of the QNAME field of question section
 * This function computes the length of the NAME field of answer section
 */
 
-std::uint16_t compute_name_length(std::uint8_t response_msg[], ssize_t bytes_received, std::uint8_t start_index)
+std::uint16_t DNS_Message::compute_name_length(std::uint8_t response_msg[], ssize_t bytes_received, std::uint8_t start_index)
 {
+    // Initializing length = 1 to account for null byte at end
     std::uint16_t length = 1;
+    bool containPointer = false;
     std::uint16_t domain_name_length = response_msg[start_index];
     while(domain_name_length)
     {
+        if(this->isPointer(response_msg[start_index]))
+        {
+            containPointer = true;
+            length += 2;
+            break;
+        }
         length += domain_name_length + 1;
         start_index = start_index + domain_name_length + 1;
         domain_name_length = response_msg[start_index];
     }
+
+    // We subtract 1 from total length because the domain names which are compressed using pointers do not terminate with null byte
+    if(containPointer) return length - 1;
     return length;
 }
 
@@ -111,13 +160,23 @@ void DNS_Message::parse_dns_message(std::uint8_t response_msg[], ssize_t bytes_r
     std::cout<<"ARCOUNT: "<< this->header.ARCOUNT <<std::endl;
 
     // Parse dns question section
+    // this->questions.resize(this->header.QDCOUNT);
+    // std::uint8_t questionSectionStartIndex = sizeof(this->header);
+    // for(int i = 0; i < this->header.QDCOUNT; i++)
+    // {
+    //     std::uint16_t qname_length = this->compute_name_length(response_msg, bytes_received, questionSectionStartIndex);
+    //     this->questions[i].parse_dns_question_section(response_msg, bytes_received, questionSectionStartIndex, qname_length);
+    //     questionSectionStartIndex += this->questions[i].QNAME.size() + 4;
+    // }
+
+    // Parse compressed question section
     this->questions.resize(this->header.QDCOUNT);
     std::uint8_t questionSectionStartIndex = sizeof(this->header);
     for(int i = 0; i < this->header.QDCOUNT; i++)
     {
-        std::uint16_t qname_length = compute_name_length(response_msg, bytes_received, questionSectionStartIndex);
+        std::uint16_t qname_length = this->compute_name_length(response_msg, bytes_received, questionSectionStartIndex);
         this->questions[i].parse_dns_question_section(response_msg, bytes_received, questionSectionStartIndex, qname_length);
-        questionSectionStartIndex += this->questions[i].QNAME.size() + 4;
+        questionSectionStartIndex += qname_length + 4;
     }
 
     std::cout<<"\n\nDisplaying Question Section Details Received: "<<std::endl;
@@ -149,7 +208,7 @@ void DNS_Message::parse_dns_message(std::uint8_t response_msg[], ssize_t bytes_r
     this->answers.resize(this->header.ANCOUNT);
     for(int i = 0; i < this->header.ANCOUNT; i++)
     {
-        std::uint16_t name_length = compute_name_length(response_msg, bytes_received, answerSectionStartIndex);
+        std::uint16_t name_length = this->compute_name_length(response_msg, bytes_received, answerSectionStartIndex);
         this->answers[i].parse_dns_answer_section(response_msg, bytes_received, answerSectionStartIndex, name_length);
         answerSectionStartIndex += this->answers[i].NAME.size() + 10 + this->answers[i].RDATA.size();
     }

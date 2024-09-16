@@ -76,13 +76,13 @@ int main() {
             bytesToSend += answer.NAME.size() + 10 + answer.RDATA.size();
         }
         std::uint8_t responseBuffer[bytesToSend];
-        response.write_dns_message_to_byte_buffer(responseBuffer, bytesToSend);
+        std::pair<std::uint16_t, std::uint16_t> responseSizeInResponseBuffer =  response.write_dns_message_to_byte_buffer(responseBuffer, bytesToSend);
 
         // Send response
-        if (sendto(udpSocket, responseBuffer, sizeof(responseBuffer), 0, reinterpret_cast<struct sockaddr*>(&clientAddress), sizeof(clientAddress)) == -1) {
+        if (sendto(udpSocket, responseBuffer, responseSizeInResponseBuffer.second , 0, reinterpret_cast<struct sockaddr*>(&clientAddress), sizeof(clientAddress)) == -1) {
             perror("Failed to send response");
         }
-        else write_message_to_server_log(responseBuffer, bytesToSend, response);
+        else write_message_to_server_log(responseBuffer, responseSizeInResponseBuffer, response);
    }
 
    close(udpSocket);
