@@ -31,7 +31,7 @@ void DNS_Question::write_dns_question_section(std::vector<std::string> domains, 
     this->TYPE = clss;
 }
 
-std::string get_substring(std::vector<std::uint8_t> str, std::uint16_t start, std::uint16_t end)
+std::string DNS_Question::get_substring(std::vector<std::uint8_t> str, std::uint16_t start, std::uint16_t end)
 {
     std::string ans = "";
     for(int i = start; i <= end; i++)
@@ -43,7 +43,6 @@ std::string get_substring(std::vector<std::uint8_t> str, std::uint16_t start, st
 
 std::uint16_t DNS_Question::write_dns_question_section_to_byte_buffer(std::uint8_t responseBuffer[], std::uint16_t bytesToSend, std::uint8_t questionSectionStartIndex, std::unordered_map<std::string, std::uint16_t> &domain_name_to_buffer_index_pointer)
 {
-    std::copy(this->QNAME.begin(), this->QNAME.end(), responseBuffer + questionSectionStartIndex);
     int index = 0;
     while(index < this->QNAME.size())
     {
@@ -51,7 +50,7 @@ std::uint16_t DNS_Question::write_dns_question_section_to_byte_buffer(std::uint8
         std::string domain = get_substring(this->QNAME, index + 1, index + domain_length);
         if(domain_name_to_buffer_index_pointer.find(domain) == domain_name_to_buffer_index_pointer.end())
         {
-            domain_name_to_buffer_index_pointer[domain] = questionSectionStartIndex;
+            if(domain != "") domain_name_to_buffer_index_pointer[domain] = questionSectionStartIndex;
             responseBuffer[questionSectionStartIndex++] = domain_length;
             std::copy(domain.begin(), domain.end(), responseBuffer + questionSectionStartIndex);
             questionSectionStartIndex += domain.size();
@@ -69,10 +68,10 @@ std::uint16_t DNS_Question::write_dns_question_section_to_byte_buffer(std::uint8
         }
     }
     // The extra 4 size is used for adding the TYPE and CLASS fields of question section(as they are of 2 bytes and character is of 1 byte each, so we need a total of 4 to create response)
-    responseBuffer[questionSectionStartIndex] = (TYPE >> 8) & 0xFF;
-    responseBuffer[questionSectionStartIndex + 1] = TYPE & 0xFF;
-    responseBuffer[questionSectionStartIndex + 2] = (CLASS >> 8) & 0xFF;
-    responseBuffer[questionSectionStartIndex + 3] = (CLASS) & 0xFF;
+    responseBuffer[questionSectionStartIndex] = (this->TYPE >> 8) & 0xFF;
+    responseBuffer[questionSectionStartIndex + 1] = this->TYPE & 0xFF;
+    responseBuffer[questionSectionStartIndex + 2] = (this->CLASS >> 8) & 0xFF;
+    responseBuffer[questionSectionStartIndex + 3] = (this->CLASS) & 0xFF;
     return index;
 }
 

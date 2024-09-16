@@ -62,7 +62,7 @@ void DNS_Message::write_dns_message()
 
     std::vector<std::vector<std::string>> answers = {
         {"codecrafters.io", "1", "1", "60", "4", "81.8.8.8"},
-        {"google.com", "1", "1", "60", "4", "8.8.80.8"}
+        {"google.io", "1", "1", "60", "4", "8.8.80.8"}
     };
 
     // Step3: Create the DNS_Answer Section
@@ -100,8 +100,8 @@ std::pair<std::uint16_t, std::uint16_t> DNS_Message::write_dns_message_to_byte_b
         std::uint16_t answerSectionStartIndex = questionSectionStartIndex;
         for(DNS_Answer answer : this->answers)
         {
-            answer.write_dns_answer_section_to_byte_buffer(responseBuffer, bytesToSend, answerSectionStartIndex);
-            answerSectionStartIndex += answer.NAME.size() + 10 + answer.RDATA.size();
+            std::uint16_t name_size_in_response_Buffer = answer.write_dns_answer_section_to_byte_buffer(responseBuffer, bytesToSend, answerSectionStartIndex, domain_name_to_buffer_index_pointer);
+            answerSectionStartIndex += name_size_in_response_Buffer + 10 + answer.RDATA.size();
         }
 
         // We reverse fields from network order back to system order, so that the original values can be used by logger for writing logs
@@ -220,7 +220,7 @@ void DNS_Message::parse_dns_message(std::uint8_t response_msg[], ssize_t bytes_r
     {
         std::uint16_t name_length = this->compute_name_length(response_msg, bytes_received, answerSectionStartIndex);
         this->answers[i].parse_dns_answer_section(response_msg, bytes_received, answerSectionStartIndex, name_length);
-        answerSectionStartIndex += this->answers[i].NAME.size() + 10 + this->answers[i].RDATA.size();
+        answerSectionStartIndex += name_length + 10 + this->answers[i].RDLENGTH;
     }
 
     std::cout<<"\n\nDisplaying Answer Section Details Received: "<<std::endl;
