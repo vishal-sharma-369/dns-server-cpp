@@ -34,7 +34,29 @@ int setup_socket(int &udpSocket)
    return 0;    // Indicates successfull socket binding
 }
 
-int main() {
+int setup_resolver(int &resolverSocket, std::string resolver_ip, std::string resolver_port,struct sockaddr_in& resolverAddress)
+{
+    int resolver_socket;
+    if(resolver_ip.size() > 0) {
+        resolver_socket = socket(AF_INET, SOCK_DGRAM, 0);
+        if (resolver_socket == -1) {
+            std::cerr << "Socket creation failed: " << strerror(errno) << "..." << std::endl;
+            return 1;
+        }
+
+        resolverAddress = { 
+            .sin_family = AF_INET,
+            .sin_port = htons(std::stoi(resolver_port)),
+        };
+        if (inet_pton(AF_INET, resolver_ip.c_str(), &resolverAddress.sin_addr) <= 0) {
+            std::cerr << "Invalid resolver IP address" << std::endl;
+        }
+    }
+    return 0;
+}
+
+
+int main(int argc, char **argv) {
     // Flush after every std::cout / std::cerr
     std::cout << std::unitbuf;
     std::cerr << std::unitbuf;
@@ -46,6 +68,25 @@ int main() {
    struct sockaddr_in clientAddress;
 
     if(setup_socket(udpSocket) == 1) return 1;
+
+    std::string resolver, resolver_ip, resolver_port;
+    for(int i = 1; i < argc; i++)
+    {
+        if(i + 1 != argc)
+        {
+            if(strcmp(argv[i], "--resolver") == 0)
+            {
+                resolver = argv[i+1];
+                resolver_ip = resolver.substr(0, resolver.find(':'));
+                resolver_port = resolver.substr(resolver.find(':') + 1);
+                break;
+            }
+        }
+    }
+
+    int resolverSocket;
+    struct sockaddr_in resolverAddress;
+    if(setup_resolver(resolverSocket, resolver_ip, resolver_port, resolverAddress) == 1) return 1;
    
    int bytesRead;
    char buffer[512];

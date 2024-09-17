@@ -1,5 +1,6 @@
 #include <iostream>
 #include "answer.hpp"
+#include "../utilities/utilities.hpp"
 
 DNS_Answer::DNS_Answer(){}
 
@@ -44,16 +45,6 @@ void DNS_Answer::write_dns_answer_section(std::vector<std::string> nameDomains, 
         std::uint8_t ip_segment = static_cast<std::uint8_t>(std::stoi(rDataDomains[i]));
         this->RDATA.push_back(ip_segment);
     }
-}
-
-std::string DNS_Answer::get_substring(std::vector<std::uint8_t> str, std::uint16_t start, std::uint16_t end)
-{
-    std::string ans = "";
-    for(int i = start; i <= end; i++)
-    {
-        ans += str[i];
-    }
-    return ans;
 }
 
 std::uint16_t DNS_Answer::write_dns_answer_section_to_byte_buffer(std::uint8_t responseBuffer[], std::uint16_t bytesToSend, std::uint8_t answerSectionStartIndex, std::unordered_map<std::string, std::uint16_t>& domain_name_to_buffer_index_pointer)
@@ -102,14 +93,6 @@ std::uint16_t DNS_Answer::write_dns_answer_section_to_byte_buffer(std::uint8_t r
 
 //  DNS Answer Parser Methods
 
-/*
-* This function tells whether the label in question QNAME or answer NAME is a pointer or not
-*/
-bool DNS_Answer::isPointer(std::uint8_t x)
-{
-    return (x & (3 << 6)) == (3 << 6);
-}
-
 void DNS_Answer::parse_dns_answer_section(std::uint8_t response_msg[], ssize_t bytes_received, std::uint8_t answerSectionStartIndex, std::uint16_t name_length)
 {
     // this->NAME.resize(name_length);
@@ -120,7 +103,7 @@ void DNS_Answer::parse_dns_answer_section(std::uint8_t response_msg[], ssize_t b
     bool is_compressed = false;
     while(length != 0)
     {
-        if(this->isPointer(length))
+        if(isPointer(length))
         {
             uint16_t offset = ((length & 0x3F) << 8) | static_cast<uint8_t>((response_msg[answerSectionStartIndex + 1]));
             answerSectionStartIndex = offset;

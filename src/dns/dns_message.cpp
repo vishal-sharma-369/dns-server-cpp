@@ -2,6 +2,7 @@
 #include <sstream>
 #include <unordered_map>
 #include "dns_message.hpp"
+#include "../utilities/utilities.hpp"
 
 DNS_Message::DNS_Message(){}
 void DNS_Message::to_network_order()
@@ -27,19 +28,6 @@ void DNS_Message::from_network_order()
 -> DNS Response Writer Methods
 -----------------------------------------------------------------------------------
 */
-
-std::vector<std::string> get_domains_from_name(std::string qname)
-{
-    std::vector<std::string> domains;
-    std::stringstream ss(qname);
-    std::string domain;
-    while(!ss.eof())
-    {
-        getline(ss, domain, '.');
-        domains.push_back(domain);
-    }
-    return domains;
-}
 
 void DNS_Message::write_dns_message()
 {
@@ -119,19 +107,9 @@ std::pair<std::uint16_t, std::uint16_t> DNS_Message::write_dns_message_to_byte_b
 */
 
 /*
-* This function tells whether the label in question QNAME or answer NAME is a pointer or not
-*/
-
-bool DNS_Message::isPointer(std::uint8_t x)
-{
-    return (x & (3 << 6)) == (3 << 6);
-}
-
-/*
 * This function computes the length of the QNAME field of question section
 * This function computes the length of the NAME field of answer section
 */
-
 std::uint16_t DNS_Message::compute_name_length(std::uint8_t response_msg[], ssize_t bytes_received, std::uint8_t start_index)
 {
     // Initializing length = 1 to account for null byte at end
@@ -140,7 +118,7 @@ std::uint16_t DNS_Message::compute_name_length(std::uint8_t response_msg[], ssiz
     std::uint16_t domain_name_length = response_msg[start_index];
     while(domain_name_length)
     {
-        if(this->isPointer(response_msg[start_index]))
+        if(isPointer(response_msg[start_index]))
         {
             containPointer = true;
             length += 2;

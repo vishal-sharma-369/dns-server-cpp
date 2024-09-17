@@ -1,5 +1,6 @@
 #include <arpa/inet.h>
 #include "question.hpp"
+#include "../utilities/utilities.hpp"
 
 DNS_Question::DNS_Question(){}
 void DNS_Question::to_network_order()
@@ -29,16 +30,6 @@ void DNS_Question::write_dns_question_section(std::vector<std::string> domains, 
 
     this->CLASS = type;
     this->TYPE = clss;
-}
-
-std::string DNS_Question::get_substring(std::vector<std::uint8_t> str, std::uint16_t start, std::uint16_t end)
-{
-    std::string ans = "";
-    for(int i = start; i <= end; i++)
-    {
-        ans += str[i];
-    }
-    return ans;
 }
 
 std::uint16_t DNS_Question::write_dns_question_section_to_byte_buffer(std::uint8_t responseBuffer[], std::uint16_t bytesToSend, std::uint8_t questionSectionStartIndex, std::unordered_map<std::string, std::uint16_t> &domain_name_to_buffer_index_pointer)
@@ -77,14 +68,6 @@ std::uint16_t DNS_Question::write_dns_question_section_to_byte_buffer(std::uint8
 
 //  DNS Question Parser Methods
 
-/*
-* This function tells whether the label in question QNAME or answer NAME is a pointer or not
-*/
-bool DNS_Question::isPointer(std::uint8_t x)
-{
-    return (x & (3 << 6)) == (3 << 6);
-}
-
 void DNS_Question::parse_dns_question_section(std::uint8_t response_msg[], ssize_t bytes_received, std::uint8_t questionSectionStartIndex, std::uint16_t qname_length)
 {
     // this->QNAME.resize(qname_length);
@@ -95,7 +78,7 @@ void DNS_Question::parse_dns_question_section(std::uint8_t response_msg[], ssize
     bool is_compressed = false;
     while(length != 0)
     {
-        if(this->isPointer(length))
+        if(isPointer(length))
         {
             uint16_t offset = ((length & 0x3F) << 8) | static_cast<uint8_t>((response_msg[questionSectionStartIndex + 1]));
             questionSectionStartIndex = offset;
