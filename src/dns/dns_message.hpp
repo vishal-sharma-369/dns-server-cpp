@@ -19,6 +19,7 @@ class DNS_Message
 //  DNS Response Writer Methods
     void write_dns_message();
     std::pair<std::uint16_t, std::uint16_t> write_dns_message_to_byte_buffer(std::uint8_t responseBuffer[], std::uint16_t bytesToSend);
+    void create_dns_query();
 
 // DNS Response Parsing Methods
     std::uint16_t compute_name_length(std::uint8_t response_msg[], ssize_t bytes_received, std::uint8_t start_index);

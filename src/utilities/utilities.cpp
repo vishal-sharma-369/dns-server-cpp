@@ -1,5 +1,6 @@
 #include "utilities.hpp"
 #include <sstream>
+#include <random>
 
 std::vector<std::string> get_domains_from_name(std::string qname)
 {
@@ -30,4 +31,14 @@ std::string get_substring(std::vector<std::uint8_t> str, std::uint16_t start, st
         ans += str[i];
     }
     return ans;
+}
+
+
+std::uint16_t generate_unique_dns_id() {
+    // Use a random number generator to generate a 16-bit identifier
+    std::random_device rd;  // Non-deterministic random number generator
+    std::mt19937 gen(rd()); // Mersenne Twister engine seeded with random_device
+    std::uniform_int_distribution<std::uint16_t> dis(0, 0xFFFF);  // Range for 16-bit unsigned int
+
+    return dis(gen);  // Generate and return the random 16-bit ID
 }

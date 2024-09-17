@@ -26,12 +26,23 @@ int setup_socket_client(int &sockfd, struct sockaddr_in &server_addr)
     server_addr.sin_addr.s_addr = inet_addr("127.0.0.1"); // Server IP address
 
     // ----------------------------------------------------------------------------------------------------------------------------------
-    // TODO: I have to replace the format of this message with the dns message format(for now, it's just for testing the proper working of udp server)
-    // 3. Message to send to the server
-    const char* message = "Hello, server!";
-    
+    // 3. Query Message to send to the server
+    DNS_Message query;
+    query.create_dns_query();
+    std::uint16_t bytesToSend = sizeof(query.header);
+    for(DNS_Question question : query.questions)
+    {
+        bytesToSend += question.QNAME.size() + 4;
+    }
+    for(DNS_Answer answer : query.answers)
+    {
+        bytesToSend += answer.NAME.size() + 10 + answer.RDATA.size();
+    }
+    std::uint8_t queryBuffer[bytesToSend];
+    std::pair<std::uint16_t, std::uint16_t> querySizeInQueryBuffer =  query.write_dns_message_to_byte_buffer(queryBuffer, bytesToSend);
+
     // 4. Send message to the server
-    ssize_t sent_bytes = sendto(sockfd, message, strlen(message), 0,
+    ssize_t sent_bytes = sendto(sockfd, queryBuffer, querySizeInQueryBuffer.second, 0,
                                 (struct sockaddr*)&server_addr, sizeof(server_addr));
     if (sent_bytes < 0) {
         std::cerr << "Error sending packet" << std::endl;
@@ -39,7 +50,7 @@ int setup_socket_client(int &sockfd, struct sockaddr_in &server_addr)
         return -1;
     }
 
-    std::cout << "Message sent to server: " << message << std::endl;
+    write_message_to_client_log(queryBuffer, querySizeInQueryBuffer.second, "Message sent to server");
     return 0;    // Indicates successfull socket binding
 }
 
@@ -63,7 +74,7 @@ int main() {
     }
 
     // Print the response from the server
-    write_message_to_client_log(buffer, received_bytes);
+    write_message_to_client_log(buffer, received_bytes, "DNS response received");
     
     // Parse the response
     DNS_Message response;

@@ -41,29 +41,29 @@ void write_message_to_server_log(std::uint8_t responseBuffer[], std::pair<std::u
     std::cout<<"Answer Section size: "<< responseSizeInResponseBuffer.second - responseSizeInResponseBuffer.first << std::endl;
 }
 
-void write_message_to_client_log(std::uint8_t responseBuffer[], int bytes_received)
+void write_message_to_client_log(std::uint8_t buffer[], int bytes, std::string message)
 {
-    std::cout<<std::endl<<"DNS Response received: ";
-    for(int i = 0; i < bytes_received; i++)
+    std::cout<<std::endl<<message << ": ";
+    for(int i = 0; i < bytes; i++)
     {
         // std::cout<<std::uint8_t(buffer[i]);
-        if(responseBuffer[i] >= 97 && responseBuffer[i] <= 122)
+        if(buffer[i] >= 97 && buffer[i] <= 122)
         {
-            std::cout<<responseBuffer[i]<<" ";
+            std::cout<<buffer[i]<<" ";
         }
-        else std::cout<<unsigned(responseBuffer[i])<<" ";
+        else std::cout<<unsigned(buffer[i])<<" ";
     }
     std::cout<<std::endl;
 
-    std::cout<<std::endl<<"DNS Response received in Hexadecimal form: ";
-    for(int i = 0; i < bytes_received; i++)
+    std::cout<<std::endl<<message<<" in Hexadecimal form: ";
+    for(int i = 0; i < bytes; i++)
     {
         // std::cout<<std::uint8_t(buffer[i]);
-        if(responseBuffer[i] >= 97 && responseBuffer[i] <= 122)
+        if(buffer[i] >= 97 && buffer[i] <= 122)
         {
-            std::cout<<std::hex<<unsigned(responseBuffer[i]);
+            std::cout<<std::hex<<unsigned(buffer[i]);
         }
-        else std::cout<<std::hex<<unsigned(responseBuffer[i]);
+        else std::cout<<std::hex<<unsigned(buffer[i]);
         std::cout<<" ";
     }
     std::cout<<"\n\n";

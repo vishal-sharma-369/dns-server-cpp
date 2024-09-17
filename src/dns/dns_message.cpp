@@ -99,6 +99,79 @@ std::pair<std::uint16_t, std::uint16_t> DNS_Message::write_dns_message_to_byte_b
         return {questionSectionStartIndex, answerSectionStartIndex};
 }
 
+void DNS_Message::create_dns_query()
+{
+    std::cout<<"Creating your dns query message: "<<std::endl;
+    std::cout<<"Creating dns header for your query: "<<std::endl;
+    this->header.ID = generate_unique_dns_id();
+    this->header.FLAGS = 0;
+    std::uint16_t flag_param;
+    std::cout<<"QR: ";
+    std::cin>>flag_param;
+    this->header.FLAGS |= ((flag_param & 0x01) << 15);
+    std::cout<<"\nOPCODE: ";
+    std::cin>>flag_param;
+    this->header.FLAGS |= ((flag_param & 0x17) << 11);
+    std::cout<<"\nAA: ";
+    std::cin>>flag_param;
+    this->header.FLAGS |= ((flag_param & 0x01) << 10);
+    std::cout<<"\nTC: ";
+    std::cin>>flag_param;
+    this->header.FLAGS |= ((flag_param & 0x01) << 9);
+    std::cout<<"\nRD: ";
+    std::cin>>flag_param;
+    this->header.FLAGS |= ((flag_param & 0x01) << 8);
+    std::cout<<"\nRA: ";
+    std::cin>>flag_param;
+    this->header.FLAGS |= ((flag_param & 0x01) << 7);
+    std::cout<<"\nZ: ";
+    std::cin>>flag_param;
+    this->header.FLAGS |= ((flag_param & 0x07) << 4);
+    std::cout<<"\nRCODE: ";
+    this->header.FLAGS |= (flag_param & 0x17);
+
+    std::uint16_t qdcount;
+    std::uint16_t ancount;
+    std::uint16_t nscount;
+    std::uint16_t arcount;
+
+    std::cout<<"\nQDCOUNT: ";
+    std::cin>>qdcount;
+    this->header.QDCOUNT = qdcount;
+    std::cout<<"\nANCOUNT: ";
+    std::cin>>ancount;
+    this->header.ANCOUNT = ancount;
+    std::cout<<"\nNSCOUNT: ";
+    std::cin>>nscount;
+    this->header.NSCOUNT = nscount;
+    std::cout<<"\nARCOUNT: ";
+    std::cin>>arcount;
+    this->header.ARCOUNT = arcount;
+
+
+    this->questions.resize(this->header.QDCOUNT);
+    std::cout<<"-----------------------------------\
+    -------------------------------\nCreating question records for your query: ";
+
+    for(int i = 0; i < this->header.QDCOUNT; i++)
+    {
+        std::cout<<"Creating question record: "<<i+1<<std::endl;
+        std::string qname;
+        std::uint16_t type;
+        std::uint16_t clss;
+        std::cout<<"\nQNAME: ";
+        std::cin >> qname;
+        std::vector<std::string> domains = get_domains_from_name(qname);
+        std::cout<<"\nTYPE: ";
+        std::cin>>type;
+        std::cout<<"\nCLASS: ";
+        std::cin>>clss;
+        this->questions[i].write_dns_question_section(domains, type, clss);
+    }
+
+    this->to_network_order();
+}
+
 
 /* 
 -----------------------------------------------------------------------------------

@@ -6,5 +6,3 @@ set -e # Exit early if any commands fail
   cmake -B build -S . -DCMAKE_TOOLCHAIN_FILE=${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake
   cmake --build ./build
 )
-
-exec ./build/my_dns_server "$@"
