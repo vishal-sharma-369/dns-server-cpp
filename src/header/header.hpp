@@ -17,7 +17,8 @@ public:
     void from_network_order();
 
     //  DNS Header Writer Methods
-    void write_dns_header();
+    void write_dns_header(std::uint16_t ID, std::uint16_t FLAGS, std::uint16_t QDCOUNT, 
+std::uint16_t ANCOUNT, std::uint16_t NSCOUNT, std::uint16_t ARCOUNT);
     void write_dns_header_to_byte_buffer(std::uint8_t responseBuffer[], std::uint16_t bytesToSend);
 
 

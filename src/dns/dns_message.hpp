@@ -17,7 +17,8 @@ class DNS_Message
     void from_network_order();
 
 //  DNS Response Writer Methods
-    void write_dns_message();
+void write_dns_message(std::uint16_t ID, std::uint16_t FLAGS, std::uint16_t QDCOUNT, 
+std::uint16_t ANCOUNT, std::uint16_t NSCOUNT, std::uint16_t ARCOUNT, std::vector<std::vector<std::string>> questions, std::vector<std::vector<std::string>> answers);
     std::pair<std::uint16_t, std::uint16_t> write_dns_message_to_byte_buffer(std::uint8_t responseBuffer[], std::uint16_t bytesToSend);
     void create_dns_query();
 

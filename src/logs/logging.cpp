@@ -41,7 +41,7 @@ void write_message_to_server_log(std::uint8_t responseBuffer[], std::pair<std::u
     std::cout<<"Answer Section size: "<< responseSizeInResponseBuffer.second - responseSizeInResponseBuffer.first << std::endl;
 }
 
-void write_message_to_client_log(std::uint8_t buffer[], int bytes, std::string message)
+void write_dns_message_buffer_to_console(std::uint8_t buffer[], int bytes, std::string message)
 {
     std::cout<<std::endl<<message << ": ";
     for(int i = 0; i < bytes; i++)

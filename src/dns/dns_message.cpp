@@ -29,29 +29,19 @@ void DNS_Message::from_network_order()
 -----------------------------------------------------------------------------------
 */
 
-void DNS_Message::write_dns_message()
+void DNS_Message::write_dns_message(std::uint16_t ID, std::uint16_t FLAGS, std::uint16_t QDCOUNT, 
+std::uint16_t ANCOUNT, std::uint16_t NSCOUNT, std::uint16_t ARCOUNT, std::vector<std::vector<std::string>> questions, std::vector<std::vector<std::string>> answers)
 {
     // Step1: Create the DNS_Header Section
-    this->header.write_dns_header();
-
-    std::vector<std::pair<std::string, std::pair<int,int>>> questions = {
-        {"www.upmc.fr", {1,1}},
-        {"www.upmc.fr", {5,1}},
-        {"web.upmc.fr", {5,1}}
-    };
+    this->header.write_dns_header(ID, FLAGS, QDCOUNT, ANCOUNT, NSCOUNT, ARCOUNT);
 
     // Step2: Create the DNS_Question Section
     this->questions.resize(questions.size());
     for(int i = 0; i < questions.size(); i++)
     {
-        std::vector<std::string> domains = get_domains_from_name(questions[i].first);
-        this->questions[i].write_dns_question_section(domains, questions[i].second.first, questions[i].second.second);
+        std::vector<std::string> domains = get_domains_from_name(questions[i][0]);
+        this->questions[i].write_dns_question_section(domains, std::uint16_t(std::stoi(questions[i][1])), std::uint16_t(std::stoi(questions[i][2])));
     }
-
-    std::vector<std::vector<std::string>> answers = {
-        {"codecrafters.io", "1", "1", "60", "4", "81.8.8.8"},
-        {"google.io", "1", "1", "60", "4", "8.8.80.8"}
-    };
 
     // Step3: Create the DNS_Answer Section
     this->answers.resize(answers.size());
@@ -150,8 +140,7 @@ void DNS_Message::create_dns_query()
 
 
     this->questions.resize(this->header.QDCOUNT);
-    std::cout<<"-----------------------------------\
-    -------------------------------\nCreating question records for your query: ";
+    std::cout<<"\n\n------------------------------------------------------------------\nCreating question records for your query: ";
 
     for(int i = 0; i < this->header.QDCOUNT; i++)
     {

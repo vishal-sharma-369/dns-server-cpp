@@ -24,15 +24,16 @@ void DNS_Header::from_network_order()
 }
 
 //  DNS Header Writer Methods
-void DNS_Header::write_dns_header()
+void DNS_Header::write_dns_header(std::uint16_t ID, std::uint16_t FLAGS, std::uint16_t QDCOUNT, 
+std::uint16_t ANCOUNT, std::uint16_t NSCOUNT, std::uint16_t ARCOUNT)
 {
-    this->ID = 1;
+    this->ID = ID;
     this->FLAGS = 0;
-    this->FLAGS = (1 << 15);
-    this->QDCOUNT = 3;
-    this->ANCOUNT = 2;
-    this->NSCOUNT = 0;
-    this->ARCOUNT = 0;
+    this->FLAGS = FLAGS & 0xFFFF;
+    this->QDCOUNT = QDCOUNT;
+    this->ANCOUNT = ANCOUNT;
+    this->NSCOUNT = NSCOUNT;
+    this->ARCOUNT = ARCOUNT;
 }
 
 void DNS_Header::write_dns_header_to_byte_buffer(std::uint8_t responseBuffer[], std::uint16_t bytesToSend)

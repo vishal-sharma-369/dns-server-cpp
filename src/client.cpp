@@ -50,7 +50,7 @@ int setup_socket_client(int &sockfd, struct sockaddr_in &server_addr)
         return -1;
     }
 
-    write_message_to_client_log(queryBuffer, querySizeInQueryBuffer.second, "Message sent to server");
+    write_dns_message_buffer_to_console(queryBuffer, querySizeInQueryBuffer.second, "Message sent to server");
     return 0;    // Indicates successfull socket binding
 }
 
@@ -74,8 +74,8 @@ int main() {
     }
 
     // Print the response from the server
-    write_message_to_client_log(buffer, received_bytes, "DNS response received");
-    
+    write_dns_message_buffer_to_console(buffer, received_bytes, "DNS response received");
+
     // Parse the response
     DNS_Message response;
     response.parse_dns_message(buffer, received_bytes);
